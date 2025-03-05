@@ -1,0 +1,27 @@
+{
+    "id": "ECD79AA9",
+    "path": "~/ampliseq_phylogenetic_tree/annotation.R",
+    "project_path": "annotation.R",
+    "type": "r_source",
+    "hash": "4202998557",
+    "contents": "",
+    "dirty": false,
+    "created": 1741010921490.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "74,0",
+        "scrollLine": "54"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1741186429,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1741186429606,
+    "read_only": false,
+    "read_only_alternatives": []
+}
