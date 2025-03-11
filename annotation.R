@@ -33,14 +33,21 @@ library(data.table)
 library(ggplot2)
 library(ggtree)
 
-# Set vars
+# Set vars (rectal cancer)
 
-dir = "rectal_cancer"
-dada2_asv_tax = "ASV_tax.silva_138.tsv" # name changes depending on database used 
-#dada2_asv_tax = "ASV_tax.gtdb_R07-RS207.tsv"# (file for pipeline_test dir)
+# dir = "rectal_cancer"
+# dada2_asv_tax = "ASV_tax.silva_138.tsv" # name changes depending on database used 
+# meta_filename = "Metadata.tsv"
+# condition_col = "condition"
+# results_path = "/home/camilla.callierotti/microbiome/tree_annotation_script/trees/"
+
+# set vars (ampliseq test profile)
+
+dir = "pipeline_test"
+dada2_asv_tax = "ASV_tax.gtdb_R07-RS207.tsv"# (file for pipeline_test dir)
 meta_filename = "Metadata.tsv"
-condition_col = "condition"
-results_path = "/home/camilla.callierotti/microbiome/tree_annotation_script/trees/"
+condition_col = "treatment1"
+results_path = "~/ampliseq_phylogenetic_tree/trees/"
 
 # Load Newick tree
 
@@ -69,6 +76,28 @@ asv_species$Phylum[is.na(asv_species$Phylum)] <- "Unknown Phylum"
 message("Metadata loaded and prepared.")
 
 #
+#   +--------------------+
+#   |      FUNCTIONS     |
+#   +--------------------+
+#   
+
+# Update tip labels with taxonomy
+tip_labels_to_taxonomy <- function(tree, asv_species) {
+  tree$ASV <- tree$tip.label # Keep original ASVs
+  tree$tip.label <- asv_species$taxonomy[match(tree$tip.label, asv_species$ASV_ID)] # Replace labels with taxonomy
+  return(tree)
+}
+
+# Revert tip labels back to ASVs
+tip_labels_to_asv <- function(tree) {
+  if (!"ASV" %in% names(tree)) {
+    stop("The tree does not contain ASV labels. Make sure to have run update_tip_labels first.")
+  }
+  tree$tip.label <- tree$ASV
+  return(tree)
+}
+
+#
 #   +----------------------------+
 #   |  TREE 1 - Basic tree       |
 #   +----------------------------+
@@ -76,8 +105,7 @@ message("Metadata loaded and prepared.")
 
 # Change tip labels to ASV taxonomy
 
-tree$ASV <- tree$tip.label # keep ASVs in different object
-tree$tip.label <- asv_species$taxonomy[match(tree$tip.label, asv_species$ASV_ID)] # change tip label to taxonomy
+tree <- tip_labels_to_taxonomy(tree, asv_species)
 
 # Colour tree by phylum
 
@@ -124,7 +152,7 @@ message("Created heatmap for second tree.")
 
 # Change tip labels back to ASVs
 
-tree$tip.label <- tree$ASV
+tree <- tip_labels_to_asv(tree)
 
 # Create ggtree object
 
@@ -146,10 +174,24 @@ message("Saved second tree.")
 #   +--------------------------------------------+
 #   
 
-# horiz <- ggtree(tree) + 
-#   theme_tree2() + 
-#   geom_tiplab(size=3) + 
-#   labs(caption="Evolutionary Distance")
-#   
+# Change tip labels to ASV taxonomy
+
+tree <- tip_labels_to_taxonomy(tree, asv_species)
+
+# Create ggtree object
+
+horiz <- ggtree(tree) +
+  theme_tree2() +
+  geom_tiplab(size=3) +
+  labs(caption="Evolutionary Distance")
+horiz
+
+message("Created third tree.")
+
+# Save tree
+
+ggsave(paste0(results_path,"tree_distances.pdf"), plot = horiz, width = 100, height = 100, units = "cm", limitsize = FALSE)
+message("Saved third tree.")
+
 # users can change branch length stored in tree object by using rescale_tree() function provided by the treeio package
 
