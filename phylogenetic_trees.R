@@ -40,6 +40,7 @@ library(ggtree)
 # meta_filename = "Metadata.tsv"
 # condition_col = "condition"
 # results_path = "/home/camilla.callierotti/microbiome/tree_annotation_script/trees/"
+# msa_fasta = ""
 
 # set vars (ampliseq test profile)
 
@@ -48,6 +49,7 @@ dada2_asv_tax = "ASV_tax.gtdb_R07-RS207.tsv"# (file for pipeline_test dir)
 meta_filename = "Metadata.tsv"
 condition_col = "treatment1"
 results_path = "~/ampliseq_phylogenetic_tree/trees/"
+msa_fasta = ""
 
 # Load Newick tree
 
@@ -117,11 +119,12 @@ for (phylum in unique(asv_species$Phylum)) {
 
 # Create ggtree object
 
-t1 <- ggtree(tree, layout = 'daylight', branch.length = 'none', size=1.5) + geom_tiplab(size = 6)
-t1_coloured <- groupOTU(t1, phyla_list, 'Phylum') +
+tree_coloured <- groupOTU(tree, phyla_list, 'Phylum')
+
+t1 <- ggtree(tree_coloured, layout = 'daylight', branch.length = 'none', size = 1.5) +
   aes(color = Phylum) +
   theme(legend.position = "right", legend.text = element_text(size = 6))
-t1_coloured
+
 message("Created first tree.")
 
 # Save tree
@@ -161,12 +164,17 @@ circ_heatmap <- gheatmap(circ, heatmap_matrix, offset=0, width=.2,
                colnames_angle=95, colnames_offset_y = .25) +
   scale_fill_gradient(low = "#C6D4F9", high = "#F1A7C2", name="Abundance")
 circ_heatmap
-message("Created first tree.")
+
+message("Created second tree.")
 
 # Save tree
 
 ggsave(paste0(results_path,"tree_heatmap.pdf"), plot = circ_heatmap, width = 100, height = 100, units = "cm", limitsize = FALSE)
 message("Saved second tree.")
+
+# Convert to plotly object
+
+plotly::ggplotly(circ) # not working for circular trees
 
 #
 #   +--------------------------------------------+
@@ -182,7 +190,7 @@ tree <- tip_labels_to_taxonomy(tree, asv_species)
 
 horiz <- ggtree(tree) +
   theme_tree2() +
-  geom_tiplab(size=3) +
+  geom_tiplab((label=tree$tip.label), size=3) +
   labs(caption="Evolutionary Distance")
 horiz
 
@@ -193,5 +201,18 @@ message("Created third tree.")
 ggsave(paste0(results_path,"tree_distances.pdf"), plot = horiz, width = 100, height = 100, units = "cm", limitsize = FALSE)
 message("Saved third tree.")
 
+# Create plotly object
+
+plotly::ggplotly(horiz, tooltip = c("label"))
+
 # users can change branch length stored in tree object by using rescale_tree() function provided by the treeio package
+
+#
+#   +-----------------------------+
+#   |  TREE 4 - TREE W MSA - WIP  |
+#   +-----------------------------+
+#   
+
+
+msaplot(p=ggtree(tree), fasta=paste0("data/",dir,"/",msa_fasta), window=c(150, 175))
 
