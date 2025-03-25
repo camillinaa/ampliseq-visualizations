@@ -1,7 +1,0 @@
-{
-    "installOptions": {
-        "installFromRepository": true,
-        "libraryPath": "/Users/camilla.callierotti/Library/R/arm64/4.4/library",
-        "installDependencies": true
-    }
-}
