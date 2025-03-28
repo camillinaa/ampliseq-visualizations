@@ -1,3 +1,5 @@
+# Import libraries
+
 library(data.tree)
 library(ggtree)
 library(ggplot2)
@@ -52,34 +54,46 @@ data_agg <- data_agg %>%
     # Size: magnitude of log-fold change
     point_size = abs(conditioncancer_lfc),
     
-    # Shape: use star (8) if significant, else circle (16)
-    sig_shape = ifelse(conditioncancer_qval < 0.05, 8, 16)
+    # Shape: use triangle (17) if significant, else circle (16)
+    sig_shape = ifelse(conditioncancer_qval < 0.05, 17, 16)
   )
 
 
 p <- ggtree(phylo_tree, layout = "circular", branch.length = "none")
 
 p$data <- p$data %>%
-  left_join(data_agg, by = c("label" = "Phylum"))  # label is the tip name
+  left_join(data_agg, by = c("label" = "Phylum"))  # merge data_agg to the tree structure (label is the tip name)
 
 p +
   geom_point(aes(color = lfc_color, size = point_size, shape = factor(sig_shape)), na.rm = TRUE) +
-  geom_tiplab(aes(label = label), size = 3) +
+  geom_tiplab(
+    aes(label = label), 
+    size = 3,
+    hjust = -0.15
+    ) + # geom_tiplab to add phylum name
   scale_color_manual(
     values = c("Up" = "red", "Down" = "blue", "Neutral" = "grey"),
     name = "LFC Direction"
-  ) +
+  ) + # scale_color_manual to color tips
   scale_size_continuous(
     range = c(2, 6),
     name = expression("|log"[2]*" fold change|")
-  ) +
+  ) + # scale_color_manual to give tips size
   scale_shape_manual(
-    values = c("16" = 16, "8" = 8),
+    values = c("16" = 16, "17" = 17),
     labels = c("Not significant", "q < 0.05"),
     name = "Significance"
-  ) +
+  ) + # scale_color_manual to give tips shape
   labs(
     title = "Differentially Abundant Taxa in Condition/Treatment via ANCOM-BC"
   ) +
-  theme(legend.position = "right")
+  theme(legend.position = "right") +
+  geom_label2(
+    data = subset(p$data, isTip == FALSE),
+    aes(label = label),
+    hjust = -0.4,
+    size = 3,
+    color = "darkgreen"
+  ) 
 
+ggsave("results/ancombc/cladogram-level2.png", plot = last_plot())
