@@ -7,6 +7,7 @@ library(stringr)
 library(readr)
 library(purrr)
 
+
 dir <- "rectal-cancer"
 
 
@@ -96,6 +97,7 @@ p$data <- p$data %>%
     label_clean = gsub("__.*", "", label)  # Create a new column with the cleaned label
   )
 
+whole_tree <- p$data
 
 p +
   geom_point(aes(color = lfc_color, size = point_size, shape = factor(sig_shape)), na.rm = TRUE) +
@@ -107,22 +109,76 @@ p +
     size = 1.5,
     color = "darkgreen"
   ) +
-  scale_color_manual(
-    values = c("Up" = "red", "Down" = "blue", "Neutral" = "grey"),
-    name = "LFC Direction"
-  ) +
   scale_size_continuous(
     range = c(2, 6),
-    name = expression("|log"[2]*" fold change|")
+    name = "Effect Size (LFC)"
+  ) +  
+  scale_color_manual(
+    values = c("Up" = "red", "Down" = "blue", "Neutral" = "grey"),
+    name = "Effect Size (LFC) Direction",
+    na.translate = FALSE # remove NA from legend!!!!
   ) +
   scale_shape_manual(
     values = c("16" = 16, "17" = 17),
-    labels = c("Not significant", "q < 0.05"),
-    name = "Significance"
+    labels = c("Not significant", "Significant (q < 0.05)"),
+    name = "Significance",
+    na.translate = FALSE # remove NA from legend!!!!
   ) +
-  labs(title = "Genus-Level Cladogram of Condition/Treatment-Associated Microbiome Changes (ANCOM-BC)") +
+  labs(title = "Enriched Organisms in Treatment/Condition") +
   theme(legend.position = "right")
 
 ggsave("results/ancombc/cladogram-main.png", plot = last_plot(), dpi = 600)
 
+
+# --- CREATE CLADOGRAM ONLY WITH SIGNIFICANT ORGANISMS ---#
+
+#Rationale:
+# - Identify all significant organisms at the genus level, i.e. tips 
+# - For organisms significant only at higher taxonomic levels, identify all tips that belong to that phylum/class/order/family and include those in the pruned tree
+
+significant_organisms <- p$data %>%
+  filter(sig_shape == 17)  
+
+# build a new tree with significant_organisms + all the relative tips (genera) from taxonomy_suff
+
+significant_taxonomy <- taxonomy_suff %>%
+  filter(if_any(everything(), ~ . %in% significant_organisms$label))
+
+significant_taxonomy_tree <- as.Node(significant_taxonomy)
+phylo_tree <- as.phylo(significant_taxonomy_tree)
+
+p_sig <- ggtree(phylo_tree, layout = "circular", branch.length = "none")
+
+p_sig$data <- p_sig$data %>%
+  left_join(p$data, by="label", suffix = c("",".y")) %>%
+  select(-ends_with(".y")) # annotate p_sig$data 
+
+p_sig +
+  geom_point(aes(color = lfc_color, size = point_size, shape = factor(sig_shape)), na.rm = TRUE) +
+  geom_tiplab(aes(label = label_clean), size = 2.8, hjust = -0.15) +
+  geom_label2(
+    data = subset(p_sig$data, isTip == FALSE),
+    aes(label = label_clean), 
+    hjust = -0.2,
+    size = 2.5,
+    color = "darkgreen"
+  ) +
+  scale_size_continuous(
+    range = c(2, 6),
+    name = "Effect Size (LFC)"
+  ) +
+  scale_color_manual(
+    values = c("Up" = "red", "Down" = "blue", "Neutral" = "grey"),
+    name = "LFC Direction"
+  ) +
+  scale_shape_manual(
+    values = c("16" = 16, "17" = 17),
+    labels = c("Not significant", "Significant (q < 0.05)"),
+    name = "Significance",
+    na.translate = FALSE # remove NA from legend!!!!
+  ) +
+  labs(title = "Enriched Organisms in Treatment/Condition") +
+  theme(legend.position = "right")
+
+ggsave("results/ancombc/cladogram-sig.png", plot = last_plot(), dpi = 600)
 
